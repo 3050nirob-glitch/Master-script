@@ -5,23 +5,20 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
-local TeleportService = game:GetService("TeleportService")
 
--- ==================== অ্যান্টি-কিক ও বাইপাস হুক ====================
+-- ==================== অ্যান্টি-কিক হুক (টেলিপোর্ট ব্লক রিমুভড) ====================
 pcall(function()
     local mt = getrawmetatable(game)
     local oldNamecall = mt.__namecall
     setreadonly(mt, false)
     mt.__namecall = newcclosure(function(self, ...)
         local method = getnamecallmethod()
-        if method == "Kick" then return end
-        if method == "Teleport" or method == "TeleportAsync" then
-            local args = {...}
-            if self == TeleportService and (not args[1] or args[1] == 0 or args[1] == -1) then
-                return
-            end
+        if method == "Kick" then 
+            return 
         end
-        if method == "UserOwnsGamePassAsync" or method == "PlayerOwnsAsset" then return true end
+        if method == "UserOwnsGamePassAsync" or method == "PlayerOwnsAsset" then 
+            return true 
+        end
         return oldNamecall(self, ...)
     end)
     setreadonly(mt, true)
@@ -40,7 +37,7 @@ local Values = {
 
 -- ==================== UI ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MasterUI_V20"
+ScreenGui.Name = "MasterUI_V21"
 pcall(function() ScreenGui.Parent = game.CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
@@ -162,10 +159,10 @@ local function createActionBtn(name, callback)
     local c = Instance.new("UICorner", btn); c.CornerRadius = UDim.new(0, 6)
     
     btn.MouseButton1Click:Connect(function()
-        btn.BackgroundColor3 = Color3.fromRGB(0, 200, 100) -- ফ্ল্যাশ সবুজ
-        callback()
+        btn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        pcall(callback)
         task.wait(0.3)
-        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 100) -- আগের রঙে ফেরা
+        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 100)
     end)
 end
 
@@ -189,12 +186,10 @@ createToggle("Anti-Void", "AntiVoid")
 createToggle("WallHack (Noclip)", "WallHack")
 createToggle("ESP + Location", "ESP")
 createToggle("Antenna Lines", "Antenna")
-
--- টগল ফাংশন (যেমন Inf Jump)
 createToggle("Inf Jump", "InfJump")
 createToggle("Fullbright", "Fullbright")
 
--- ==================== অ্যাকশন ফাংশন (ক্লিক করলেই কাজ করবে, কোনো অটো ট্যাপ নেই) ====================
+-- ==================== অ্যাকশন ফাংশন ====================
 createActionBtn("TP to Mouse (Click)", function()
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
@@ -258,19 +253,19 @@ end)
 
 createActionBtn("Headless", function()
     local char = LocalPlayer.Character
-    if char then char:FindFirstChildOfClass("Humanoid").HeadScale.Value = 0.01 end
+    if char and char:FindFirstChildOfClass("Humanoid") then char:FindFirstChildOfClass("Humanoid").HeadScale.Value = 0.01 end
 end)
 
 createActionBtn("Korblox", function()
     local char = LocalPlayer.Character
-    if char then char:FindFirstChildOfClass("Humanoid").BodyTypeScale.Value = 0.01 end
+    if char and char:FindFirstChildOfClass("Humanoid") then char:FindFirstChildOfClass("Humanoid").BodyTypeScale.Value = 0.01 end
 end)
 
 createActionBtn("Spin Player", function()
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
         local bv = Instance.new("BodyAngularVelocity"); bv.AngularVelocity = Vector3.new(0, 20, 0); bv.MaxTorque = Vector3.new(0, math.huge, 0); bv.Parent = char.HumanoidRootPart
-        task.delay(3, function() bv:Destroy() end)
+        task.delay(3, function() if bv then bv:Destroy() end end)
     end
 end)
 
@@ -298,7 +293,7 @@ createActionBtn("Unlock VIP Tools", function()
     for _, v in pairs(game:GetDescendants()) do if v:IsA("Tool") then pcall(function() local c = v:Clone(); c.Parent = LocalPlayer.Backpack end) end end
 end)
 
--- ==================== কোর লজিক ====================
+-- ==================== কোর লজিক (সেফ লোডিং) ====================
 local bodyVel, gravityForce, speedBodyVel
 local jumpRequested = false
 
@@ -306,7 +301,7 @@ UserInputService.JumpRequest:Connect(function()
     jumpRequested = true
     task.delay(0.1, function() jumpRequested = false end)
     if Toggles.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        pcall(function() LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end)
     end
 end)
 
@@ -390,33 +385,35 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ESP & Antenna
+-- ESP & Antenna (সেফ লুপ)
 local AntennaLines = {}
 task.spawn(function()
     while task.wait(0.1) do
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character then
-                local head = p.Character:FindFirstChild("Head")
-                if Toggles.ESP then
-                    if not p.Character:FindFirstChild("OllieESP") then
-                        local hl = Instance.new("Highlight"); hl.Name = "OllieESP"; hl.FillColor = Color3.fromRGB(255, 0, 0); hl.Parent = p.Character
+        pcall(function()
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character then
+                    local head = p.Character:FindFirstChild("Head")
+                    if Toggles.ESP then
+                        if not p.Character:FindFirstChild("OllieESP") then
+                            local hl = Instance.new("Highlight"); hl.Name = "OllieESP"; hl.FillColor = Color3.fromRGB(255, 0, 0); hl.Parent = p.Character
+                        end
+                    else
+                        if p.Character:FindFirstChild("OllieESP") then p.Character.OllieESP:Destroy() end
                     end
-                else
-                    if p.Character:FindFirstChild("OllieESP") then p.Character.OllieESP:Destroy() end
+                    if Toggles.Antenna and head then
+                        if not AntennaLines[p] then
+                            local line = Drawing.new("Line"); line.Thickness = 1; line.Color = Color3.fromRGB(255, 0, 0); line.Transparency = 1; AntennaLines[p] = line
+                        end
+                        local hp, os = Camera:WorldToViewportPoint(head.Position)
+                        if os then AntennaLines[p].From = Vector2.new(Camera.ViewportSize.X / 2, 0); AntennaLines[p].To = Vector2.new(hp.X, hp.Y); AntennaLines[p].Visible = true else AntennaLines[p].Visible = false end
+                    elseif AntennaLines[p] then AntennaLines[p].Visible = false end
                 end
-                if Toggles.Antenna and head then
-                    if not AntennaLines[p] then
-                        local line = Drawing.new("Line"); line.Thickness = 1; line.Color = Color3.fromRGB(255, 0, 0); line.Transparency = 1; AntennaLines[p] = line
-                    end
-                    local hp, os = Camera:WorldToViewportPoint(head.Position)
-                    if os then AntennaLines[p].From = Vector2.new(Camera.ViewportSize.X / 2, 0); AntennaLines[p].To = Vector2.new(hp.X, hp.Y); AntennaLines[p].Visible = true else AntennaLines[p].Visible = false end
-                elseif AntennaLines[p] then AntennaLines[p].Visible = false end
             end
-        end
+        end)
     end
 end)
 
--- Aimbot & Auto Kill
+-- Aimbot & Auto Kill (সেফ লুপ)
 local function getClosest()
     local myChar = LocalPlayer.Character
     if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil end
@@ -432,38 +429,42 @@ end
 
 RunService.RenderStepped:Connect(function()
     if Toggles.Aimbot or Toggles.HeadshotOnly then
-        local target = getClosest()
-        if target and target.Character and target.Character:FindFirstChild("Head") then
-            Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, target.Character.Head.Position)
-        end
+        pcall(function()
+            local target = getClosest()
+            if target and target.Character and target.Character:FindFirstChild("Head") then
+                Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, target.Character.Head.Position)
+            end
+        end)
     end
 end)
 
 task.spawn(function()
     while task.wait(0.1) do
-        if Toggles.AutoKill then
-            local target = getClosest()
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                local myChar = LocalPlayer.Character
-                if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                    myChar.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 2, 2)
-                    local tool = myChar:FindFirstChildOfClass("Tool") or (LocalPlayer:FindFirstChild("Backpack") and LocalPlayer.Backpack:FindFirstChildOfClass("Tool"))
-                    if tool then if tool.Parent ~= myChar then tool.Parent = myChar end; pcall(function() tool:Activate() end) end
-                    pcall(function() firetouchinterest(myChar.HumanoidRootPart, target.Character.HumanoidRootPart, 0); firetouchinterest(myChar.HumanoidRootPart, target.Character.HumanoidRootPart, 1) end)
-                end
-            end
-        end
-        if Toggles.AutoFarm then
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                for _, v in pairs(workspace:GetChildren()) do
-                    if v:IsA("BasePart") and (string.find(string.lower(v.Name), "coin") or string.find(string.lower(v.Name), "cash")) then
-                        pcall(function() firetouchinterest(char.HumanoidRootPart, v, 0); firetouchinterest(char.HumanoidRootPart, v, 1) end)
+        pcall(function()
+            if Toggles.AutoKill then
+                local target = getClosest()
+                if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                    local myChar = LocalPlayer.Character
+                    if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                        myChar.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 2, 2)
+                        local tool = myChar:FindFirstChildOfClass("Tool") or (LocalPlayer:FindFirstChild("Backpack") and LocalPlayer.Backpack:FindFirstChildOfClass("Tool"))
+                        if tool then if tool.Parent ~= myChar then tool.Parent = myChar end; pcall(function() tool:Activate() end) end
+                        pcall(function() firetouchinterest(myChar.HumanoidRootPart, target.Character.HumanoidRootPart, 0); firetouchinterest(myChar.HumanoidRootPart, target.Character.HumanoidRootPart, 1) end)
                     end
                 end
             end
-        end
+            if Toggles.AutoFarm then
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    for _, v in pairs(workspace:GetChildren()) do
+                        if v:IsA("BasePart") and (string.find(string.lower(v.Name), "coin") or string.find(string.lower(v.Name), "cash")) then
+                            pcall(function() firetouchinterest(char.HumanoidRootPart, v, 0); firetouchinterest(char.HumanoidRootPart, v, 1) end)
+                        end
+                    end
+                end
+            end
+        end)
     end
 end)
 
-print("Absolute Master V20 Loaded Successfully!")
+print("Absolute Master V21 Loaded Successfully!")
