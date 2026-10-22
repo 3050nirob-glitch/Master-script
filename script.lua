@@ -13,7 +13,7 @@ pcall(function()
     mt.__namecall = newcclosure(function(self, ...)
         local method = getnamecallmethod()
         if method == "Kick" then
-            return -- সার্ভার কিক দিতে চাইলেও ক্লায়েন্ট ব্লক করবে
+            return
         end
         return oldNamecall(self, ...)
     end)
@@ -24,7 +24,7 @@ local Toggles = {
     Speed = true, Fly = false, FlyLock = false, 
     Giant = false, SlapAura = true, Hitbox = false, 
     AntiVoid = true, InfJump = false, Noclip = false, 
-    Fullbright = false, ESP = false
+    Fullbright = false, ESP = false, Antenna = true
 }
 
 local targetSpeed = 60
@@ -38,6 +38,25 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "GodTierUI"
 pcall(function() ScreenGui.Parent = game.CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+-- টপ প্লেয়ার কাউন্টার বক্স
+local TopGui = Instance.new("ScreenGui")
+TopGui.Name = "TopCounter"
+pcall(function() TopGui.Parent = game.CoreGui end)
+if not TopGui.Parent then TopGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+local TopBox = Instance.new("TextLabel")
+TopBox.Parent = TopGui
+TopBox.Size = UDim2.new(0, 150, 0, 40)
+TopBox.Position = UDim2.new(0.5, -75, 0, 10)
+TopBox.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+TopBox.BackgroundTransparency = 0.5
+TopBox.TextColor3 = Color3.fromRGB(0, 255, 0)
+TopBox.Font = Enum.Font.SourceSansBold
+TopBox.TextSize = 16
+TopBox.Text = "Players: 0"
+TopBox.BorderSizePixel = 0
+TopBox.Visible = true
 
 local Icon = Instance.new("TextButton")
 Icon.Parent = ScreenGui
@@ -76,7 +95,7 @@ MainFrame.BackgroundTransparency = 0.3
 MainFrame.BorderSizePixel = 0
 MainFrame.Visible = false
 MainFrame.ScrollingDirection = Enum.ScrollingDirection.Y
-MainFrame.CanvasSize = UDim2.new(0, 0, 0, 0) -- ডাইনামিক সাইজ
+MainFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 MainFrame.ScrollBarThickness = 6
 MainFrame.ScrollBarImageColor3 = Color3.fromRGB(200, 0, 0)
 
@@ -85,7 +104,6 @@ UIListLayout.Parent = MainFrame
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 5)
 
--- অটো স্ক্রল ফিক্স
 UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     MainFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 20)
 end)
@@ -112,7 +130,6 @@ local function createBtn(name, toggleName)
     end)
 end
 
--- মূল বাটনগুলো
 createBtn("Speed Hack", "Speed")
 createBtn("Fly", "Fly")
 createBtn("Lock Vertical", "FlyLock")
@@ -123,9 +140,9 @@ createBtn("Inf Jump", "InfJump")
 createBtn("Noclip (Wall Hack)", "Noclip")
 createBtn("Fullbright", "Fullbright")
 createBtn("ESP (Player Box)", "ESP")
+createBtn("Antenna Lines", "Antenna")
 createBtn("Ultra Giant", "Giant")
 
--- স্পিড এবং সাইজ টেক্সট বক্স
 local SpeedBox = Instance.new("TextBox")
 SpeedBox.Parent = MainFrame
 SpeedBox.Size = UDim2.new(1, 0, 0, 35)
@@ -282,17 +299,15 @@ task.spawn(function()
             local tool = char:FindFirstChildOfClass("Tool") or (backpack and backpack:FindFirstChildOfClass("Tool"))
             if tool then
                 if tool.Parent ~= char then tool.Parent = char end
-                pcall(function() tool.Enabled = true end) -- কুলডাউন বাইপাস
+                pcall(function() tool.Enabled = true end)
             end
 
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                     local eHrp = p.Character.HumanoidRootPart
                     local eHum = p.Character:FindFirstChildOfClass("Humanoid")
-                    -- ১০০ মিটার রেঞ্জ
                     if eHum and eHum.Health > 0 and (hrp.Position - eHrp.Position).Magnitude <= 100 then
                         if tool then pcall(function() tool:Activate() end) end
-                        -- পাওয়ারফুল নকব্যাক (ভেলোসিটি ৫০০)
                         pcall(function() eHrp.AssemblyLinearVelocity = Vector3.new(0, 500, 0) end)
                     end
                 end
@@ -316,7 +331,7 @@ task.spawn(function()
     end
 end)
 
--- ==================== ৬. Click TP (মাউস/টাচ দিয়ে টেলিপোর্ট) ====================
+-- ==================== ৬. Click TP ====================
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if isClickTP and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
@@ -330,7 +345,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- ==================== ৭. Fullbright & ESP ====================
+-- ==================== ৭. Fullbright & ESP + Antenna Lines ====================
 local lighting = game:GetService("Lighting")
 local bright = Instance.new("ColorCorrectionEffect")
 bright.Name = "OllieBright"
@@ -339,14 +354,26 @@ bright.Contrast = 1
 bright.Enabled = false
 bright.Parent = lighting
 
+-- Drawing API সেটআপ
+local Drawing = Drawing
+local AntennaLines = {}
+
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait(0.1) do
         bright.Enabled = Toggles.Fullbright
         
+        -- প্লেয়ার কাউন্ট আপডেট
+        local pCount = #Players:GetPlayers()
+        TopBox.Text = "Players: " .. tostring(pCount)
+
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character then
                 local char = p.Character
-                if Toggles.ESP then
+                local head = char:FindFirstChild("Head")
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+
+                -- ESP (Highlight)
+                if Toggles.ESP and hrp then
                     if not char:FindFirstChild("OllieESP") then
                         local hl = Instance.new("Highlight")
                         hl.Name = "OllieESP"
@@ -357,9 +384,41 @@ task.spawn(function()
                 else
                     if char:FindFirstChild("OllieESP") then char.OllieESP:Destroy() end
                 end
+
+                -- Antenna (Drawing API)
+                if Toggles.Antenna and head then
+                    if not AntennaLines[p] then
+                        local line = Drawing.new("Line")
+                        line.Thickness = 1
+                        line.Color = Color3.fromRGB(255, 0, 0)
+                        line.Transparency = 1
+                        AntennaLines[p] = line
+                    end
+
+                    local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                    if onScreen then
+                        AntennaLines[p].From = Vector2.new(Camera.ViewportSize.X / 2, 30) -- স্ক্রিনের উপরের মাঝখান থেকে
+                        AntennaLines[p].To = Vector2.new(headPos.X, headPos.Y)
+                        AntennaLines[p].Visible = true
+                    else
+                        AntennaLines[p].Visible = false
+                    end
+                else
+                    if AntennaLines[p] then
+                        AntennaLines[p].Visible = false
+                    end
+                end
             end
         end
     end
 end)
 
-print("Absolute God-Tier Master Code V7 Loaded Successfully!")
+-- যারা লিভ করবে তাদের এন্টেনা রিমুভ হবে
+Players.PlayerRemoving:Connect(function(p)
+    if AntennaLines[p] then
+        AntennaLines[p]:Remove()
+        AntennaLines[p] = nil
+    end
+end)
+
+print("Ultimate God-Tier V8 (Antenna & Counter) Loaded Successfully!")
