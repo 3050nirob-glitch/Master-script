@@ -24,17 +24,16 @@ local Toggles = {
     Speed = true, Fly = false, FlyWallHack = false, WallHack = false,
     ESP = false, Antenna = true, Aimbot = false, HeadshotOnly = false,
     AutoKill = false, AutoFarm = false, Giant = false, Invisible = false, 
-    ForceStay = false, AntiVoid = true, GodMode = true, ClickTP = false,
-    MoonGravity = false, ZeroGravity = false, NoFall = false, AntiFling = false
+    ForceStay = false, AntiVoid = true, GodMode = true, ClickTP = false
 }
 
 local Values = {
     Speed = 100, FlySpeed = 150, GiantSize = 10
 }
 
--- ==================== UI (Infinite Scroll Fix) ====================
+-- ==================== UI (Design & Layout) ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MasterUI_V15"
+ScreenGui.Name = "MasterUI_V16"
 pcall(function() ScreenGui.Parent = game.CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
@@ -42,12 +41,17 @@ local Icon = Instance.new("TextButton")
 Icon.Parent = ScreenGui
 Icon.Size = UDim2.new(0, 45, 0, 45)
 Icon.Position = UDim2.new(0, 10, 0, 50)
-Icon.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+Icon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Icon.Text = "H"
-Icon.TextColor3 = Color3.fromRGB(255, 255, 255)
+Icon.TextColor3 = Color3.fromRGB(255, 50, 50)
 Icon.Font = Enum.Font.SourceSansBold
 Icon.TextSize = 22
 Icon.BorderSizePixel = 0
+local iconCorner = Instance.new("UICorner", Icon)
+iconCorner.CornerRadius = UDim.new(0, 8)
+local iconStroke = Instance.new("UIStroke", Icon)
+iconStroke.Color = Color3.fromRGB(255, 0, 0)
+iconStroke.Thickness = 2
 
 local dragging, dragInput, mousePos, framePos = false, nil, nil, nil
 Icon.InputBegan:Connect(function(input)
@@ -68,15 +72,20 @@ end)
 
 local MainFrame = Instance.new("ScrollingFrame")
 MainFrame.Parent = ScreenGui
-MainFrame.Size = UDim2.new(0, 180, 0, 420)
+MainFrame.Size = UDim2.new(0, 180, 0, 400)
 MainFrame.Position = UDim2.new(0, 65, 0, 50)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.BackgroundTransparency = 0.1
 MainFrame.BorderSizePixel = 0
 MainFrame.Visible = false
 MainFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-MainFrame.ScrollBarThickness = 6
-MainFrame.ScrollBarImageColor3 = Color3.fromRGB(200, 0, 0)
+MainFrame.ScrollBarThickness = 4
+MainFrame.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 0)
+local frameCorner = Instance.new("UICorner", MainFrame)
+frameCorner.CornerRadius = UDim.new(0, 10)
+local frameStroke = Instance.new("UIStroke", MainFrame)
+frameStroke.Color = Color3.fromRGB(50, 50, 50)
+frameStroke.Thickness = 2
 
 local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Parent = MainFrame
@@ -105,6 +114,7 @@ local function createToggle(name, toggleName)
     btn.TextSize = 14
     btn.BorderSizePixel = 0
     btn.Text = name .. ": " .. (Toggles[toggleName] and "ON" or "OFF")
+    local c = Instance.new("UICorner", btn); c.CornerRadius = UDim.new(0, 6)
     
     btn.MouseButton1Click:Connect(function()
         Toggles[toggleName] = not Toggles[toggleName]
@@ -117,14 +127,14 @@ local function createBox(placeholder, valueKey)
     local box = Instance.new("TextBox")
     box.Parent = MainFrame
     box.Size = UDim2.new(1, 0, 0, 30)
-    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    box.TextColor3 = Color3.fromRGB(200, 200, 200)
     box.PlaceholderText = placeholder
     box.Text = tostring(Values[valueKey])
     box.Font = Enum.Font.SourceSansBold
     box.TextSize = 14
     box.BorderSizePixel = 0
-    box.ClearTextOnFocus = false
+    local c = Instance.new("UICorner", box); c.CornerRadius = UDim.new(0, 6)
     
     box.FocusLost:Connect(function()
         local num = tonumber(box.Text)
@@ -136,45 +146,50 @@ local function createActionBtn(name, callback)
     local btn = Instance.new("TextButton")
     btn.Parent = MainFrame
     btn.Size = UDim2.new(1, 0, 0, 35)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 150)
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
     btn.Font = Enum.Font.SourceSansBold
     btn.TextSize = 14
     btn.BorderSizePixel = 0
     btn.Text = name
-    btn.MouseButton1Click:Connect(callback)
+    local c = Instance.new("UICorner", btn); c.CornerRadius = UDim.new(0, 6)
+    
+    btn.MouseButton1Click:Connect(function()
+        btn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        callback()
+        task.wait(0.2)
+        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+    end)
 end
 
--- ==================== মেইন বাটন ====================
+-- ==================== গুরুত্বপূর্ণ ফাংশন (উপরে) ====================
 createToggle("Speed Hack", "Speed")
 createBox("Speed (Max 2000)", "Speed")
-createToggle("Fly", "Fly")
+createToggle("Fly (Camera Direction)", "Fly")
 createToggle("Fly + WallHack", "FlyWallHack")
 createBox("Fly Speed (Max 2000)", "FlySpeed")
-createToggle("WallHack (Noclip)", "WallHack")
-createToggle("ESP + Location", "ESP")
-createToggle("Antenna Lines", "Antenna")
 createToggle("Aimbot", "Aimbot")
 createToggle("Headshot Only", "HeadshotOnly")
-createToggle("Auto Kill", "AutoKill")
-createToggle("Auto Farm/Collect", "AutoFarm")
+createToggle("Auto Kill (Teleport)", "AutoKill")
+createToggle("Auto Farm / Collect", "AutoFarm")
 createToggle("Giant Body", "Giant")
 createBox("Size (Max 2000)", "GiantSize")
 createToggle("Invisible", "Invisible")
-createToggle("Force Stay", "ForceStay")
+createToggle("Force Stay (Bypass)", "ForceStay")
 createToggle("God Mode", "GodMode")
 createToggle("Anti-Void", "AntiVoid")
+createToggle("WallHack (Noclip)", "WallHack")
+createToggle("ESP + Location", "ESP")
+createToggle("Antenna Lines", "Antenna")
 
 -- ==================== ৫০+ অ্যাকশন ফাংশন ====================
 local extraFunctions = {
-    "Inf Jump", "Fullbright", "Click TP (Toggle)", "Goto Closest", "Server Hop", "Rejoin Server",
+    "Inf Jump", "Fullbright", "Click TP", "Goto Closest", "Server Hop", "Rejoin Server",
     "FPS Boost", "Headless", "Korblox", "Spin Player", "Reset Char", "Spam Chat",
     "Delete Map (Local)", "Walk on Water", "Moon Gravity", "Zero Gravity", "Dance",
-    "Sit", "Ragdoll", "No Fall Dmg", "Anti-Fling", "Auto Parry", "Silent Aim",
-    "Trigger Bot", "Fast Equip", "Kill All (Local)", "Freeze All", "Remove Fog",
-    "Remove Sky", "ESP Names", "Item ESP", "X-Ray", "Skeleton ESP", 
-    "Auto Buy", "One Hit Kill", "Inf Ammo", "Inf Stamina", "Instant Interact",
-    "Unlock VIP Tools", "Anti-Ragdoll", "Spam Emotes", "Fling All", "Bring All"
+    "Sit", "Ragdoll", "No Fall Dmg", "Anti-Fling", "Kill All (Local)", "Freeze All", 
+    "Remove Fog", "Remove Sky", "Item ESP", "X-Ray", "Auto Buy", "One Hit Kill", 
+    "Inf Ammo", "Unlock VIP Tools", "Spam Emotes", "Fling All", "Bring All"
 }
 
 for _, fName in ipairs(extraFunctions) do
@@ -183,7 +198,7 @@ for _, fName in ipairs(extraFunctions) do
         if fName == "Inf Jump" then Toggles.InfJump = not Toggles.InfJump
         elseif fName == "Fullbright" then
             local b = Instance.new("ColorCorrectionEffect"); b.Brightness = 3; b.Parent = Lighting
-        elseif fName == "Click TP (Toggle)" then Toggles.ClickTP = not Toggles.ClickTP
+        elseif fName == "Click TP" then Toggles.ClickTP = not Toggles.ClickTP
         elseif fName == "Goto Closest" then
             if char and char:FindFirstChild("HumanoidRootPart") then
                 local c, d = nil, 9999
@@ -234,27 +249,18 @@ for _, fName in ipairs(extraFunctions) do
         elseif fName == "Ragdoll" then if char then char.Humanoid:ChangeState(Enum.HumanoidStateType.Physics) end
         elseif fName == "No Fall Dmg" then Toggles.NoFall = not Toggles.NoFall
         elseif fName == "Anti-Fling" then Toggles.AntiFling = not Toggles.AntiFling
-        elseif fName == "Auto Parry" then
-            if char then local hum = char.Humanoid; local a = Instance.new("Animation"); a.AnimationId = "rbxassetid://123456"; pcall(function() hum:LoadAnimation(a):Play() end) end
-        elseif fName == "Silent Aim" then Toggles.SilentAim = true
-        elseif fName == "Trigger Bot" then Toggles.TriggerBot = true
-        elseif fName == "Fast Equip" then Toggles.FastEquip = true
         elseif fName == "Kill All (Local)" then
             for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Humanoid") then p.Character.Humanoid.Health = 0 end end
         elseif fName == "Freeze All" then
             for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then p.Character.HumanoidRootPart.Anchored = true end end
         elseif fName == "Remove Fog" then Lighting.FogEnd = 100000; Lighting.FogStart = 100000
         elseif fName == "Remove Sky" then for _, v in pairs(Lighting:GetChildren()) do if v:IsA("Sky") then v:Destroy() end end
-        elseif fName == "ESP Names" then Toggles.ESPNames = true
         elseif fName == "Item ESP" then Toggles.ItemESP = true
         elseif fName == "X-Ray" then Toggles.XRay = true
-        elseif fName == "Skeleton ESP" then Toggles.SkeletonESP = true
         elseif fName == "Auto Buy" then Toggles.AutoBuy = true
         elseif fName == "One Hit Kill" then Toggles.OneHit = true
         elseif fName == "Inf Ammo" then
             if char then for _, v in pairs(char:GetDescendants()) do if v:IsA("IntValue") and string.find(string.lower(v.Name), "ammo") then v.Value = 9999 end end end
-        elseif fName == "Inf Stamina" then Toggles.InfStamina = true
-        elseif fName == "Instant Interact" then Toggles.InstantInteract = true
         elseif fName == "Unlock VIP Tools" then
             for _, v in pairs(game:GetDescendants()) do if v:IsA("Tool") then pcall(function() local c = v:Clone(); c.Parent = LocalPlayer.Backpack end) end end
         elseif fName == "Spam Emotes" then Toggles.SpamEmotes = true
@@ -318,6 +324,7 @@ RunService.RenderStepped:Connect(function()
         if speedBodyVel then speedBodyVel:Destroy() speedBodyVel = nil end
     end
 
+    -- Fly Logic (Camera Direction Fix)
     if Toggles.Fly then
         hum.WalkSpeed = 16
         if not bodyVel or bodyVel.Parent ~= hrp then
@@ -327,16 +334,16 @@ RunService.RenderStepped:Connect(function()
         end
         if Toggles.FlyWallHack then for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end end end
         
-        local dir = Vector3.new()
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + Camera.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - Camera.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - Camera.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + Camera.CFrame.RightVector end
-        if hum.MoveDirection.Magnitude > 0 then dir = dir + hum.MoveDirection end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) or jumpRequested then dir = dir + Vector3.new(0, 1, 0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then dir = dir - Vector3.new(0, 1, 0) end
+        local direction = Vector3.new()
+        if hum.MoveDirection.Magnitude > 0 then
+            local camLook = Camera.CFrame.LookVector
+            local camRight = Camera.CFrame.RightVector
+            direction = (camLook * hum.MoveDirection.Z) + (camRight * hum.MoveDirection.X)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) or jumpRequested then direction = direction + Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then direction = direction - Vector3.new(0, 1, 0) end
         
-        if dir.Magnitude > 0 then bodyVel.Velocity = dir.Unit * Values.FlySpeed else bodyVel.Velocity = Vector3.new(0, 0, 0) end
+        if direction.Magnitude > 0 then bodyVel.Velocity = direction.Unit * Values.FlySpeed else bodyVel.Velocity = Vector3.new(0, 0, 0) end
     else
         if bodyVel then bodyVel:Destroy() bodyVel = nil end
         if gravityForce then gravityForce:Destroy() gravityForce = nil end
@@ -431,4 +438,4 @@ task.spawn(function()
     end
 end)
 
-print("Absolute Master Code V15 (All 50+ Functions Active) Loaded Successfully!")
+print("Absolute Master V16 Loaded!")
