@@ -31,7 +31,7 @@ local Toggles = {
     Speed = true, Fly = false, FlyLock = false, FlyWallHack = false, WallHack = false,
     ESP = false, Antenna = true, Aimbot = false, HeadshotOnly = false,
     AutoKill = false, AutoFarm = false, Giant = false, Invisible = false, 
-    ForceStay = false, AntiVoid = true, GodMode = true, ClickTP = false
+    ForceStay = false, AntiVoid = true, GodMode = true, InfJump = false, Fullbright = false
 }
 
 local Values = {
@@ -40,7 +40,7 @@ local Values = {
 
 -- ==================== UI ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MasterUI_V19"
+ScreenGui.Name = "MasterUI_V20"
 pcall(function() ScreenGui.Parent = game.CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
@@ -153,25 +153,19 @@ local function createActionBtn(name, callback)
     local btn = Instance.new("TextButton")
     btn.Parent = MainFrame
     btn.Size = UDim2.new(1, 0, 0, 35)
-    btn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 100)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.SourceSansBold
     btn.TextSize = 14
     btn.BorderSizePixel = 0
-    btn.Text = name .. ": OFF"
+    btn.Text = name
     local c = Instance.new("UICorner", btn); c.CornerRadius = UDim.new(0, 6)
     
-    local isOn = false
     btn.MouseButton1Click:Connect(function()
-        isOn = not isOn
-        if isOn then
-            btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-            btn.Text = name .. ": ON"
-        else
-            btn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-            btn.Text = name .. ": OFF"
-        end
-        callback(isOn)
+        btn.BackgroundColor3 = Color3.fromRGB(0, 200, 100) -- ফ্ল্যাশ সবুজ
+        callback()
+        task.wait(0.3)
+        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 100) -- আগের রঙে ফেরা
     end)
 end
 
@@ -196,129 +190,118 @@ createToggle("WallHack (Noclip)", "WallHack")
 createToggle("ESP + Location", "ESP")
 createToggle("Antenna Lines", "Antenna")
 
--- ==================== ৫০+ অ্যাকশন ফাংশন (টগল স্টেট সহ) ====================
-local extraFunctions = {
-    "Inf Jump", "Fullbright", "Click TP", "Goto Closest", "Server Hop", "Rejoin Server",
-    "FPS Boost", "Headless", "Korblox", "Spin Player", "Reset Char", "Spam Chat",
-    "Delete Map (Local)", "Walk on Water", "Moon Gravity", "Zero Gravity", "Dance",
-    "Sit", "Ragdoll", "No Fall Dmg", "Anti-Fling", "Kill All (Local)", "Freeze All", 
-    "Remove Fog", "Remove Sky", "Item ESP", "X-Ray", "Auto Buy", "One Hit Kill", 
-    "Inf Ammo", "Unlock VIP Tools", "Spam Emotes", "Fling All", "Bring All"
-}
+-- টগল ফাংশন (যেমন Inf Jump)
+createToggle("Inf Jump", "InfJump")
+createToggle("Fullbright", "Fullbright")
 
-for _, fName in ipairs(extraFunctions) do
-    createActionBtn(fName, function(isOn)
-        local char = LocalPlayer.Character
-        if fName == "Inf Jump" then Toggles.InfJump = isOn
-        elseif fName == "Fullbright" then
-            if isOn then
-                local b = Instance.new("ColorCorrectionEffect"); b.Name = "OllieBright"; b.Brightness = 3; b.Parent = Lighting
-            else
-                local b = Lighting:FindFirstChild("OllieBright")
-                if b then b:Destroy() end
-            end
-        elseif fName == "Click TP" then Toggles.ClickTP = isOn
-        elseif fName == "Goto Closest" then
-            if isOn and char and char:FindFirstChild("HumanoidRootPart") then
-                local c, d = nil, 9999
-                for _, p in pairs(Players:GetPlayers()) do
-                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                        local dist = (char.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
-                        if dist < d then c = p; d = dist end
-                    end
-                end
-                if c then char.HumanoidRootPart.CFrame = c.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3) end
-            end
-        elseif fName == "Server Hop" then
-            if isOn then
-                local Http, TS = game:GetService("HttpService"), game:GetService("TeleportService")
-                pcall(function()
-                    local s = Http:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
-                    for _, v in pairs(s.data) do if v.playing < v.maxPlayers and v.id ~= game.JobId then TS:TeleportToPlaceInstance(game.PlaceId, v.id, LocalPlayer) break end end
-                end)
-            end
-        elseif fName == "Rejoin Server" then
-            if isOn then game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer) end
-        elseif fName == "FPS Boost" then
-            if isOn then
-                for _, v in pairs(game:GetDescendants()) do
-                    if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end
-                    if v:IsA("Decal") or v:IsA("Texture") then v.Transparency = 1 end
-                end
-            end
-        elseif fName == "Headless" then
-            if char then char:FindFirstChildOfClass("Humanoid").HeadScale.Value = isOn and 0.01 or 1 end
-        elseif fName == "Korblox" then
-            if char then char:FindFirstChildOfClass("Humanoid").BodyTypeScale.Value = isOn and 0.01 or 1 end
-        elseif fName == "Spin Player" then
-            if isOn and char and char:FindFirstChild("HumanoidRootPart") then
-                local bv = Instance.new("BodyAngularVelocity"); bv.AngularVelocity = Vector3.new(0, 20, 0); bv.MaxTorque = Vector3.new(0, math.huge, 0); bv.Parent = char.HumanoidRootPart
-                task.delay(3, function() if bv then bv:Destroy() end end)
-            end
-        elseif fName == "Reset Char" then
-            if isOn and char then char:BreakJoints() end
-        elseif fName == "Spam Chat" then
-            if isOn then
-                local chat = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-                if chat then for i=1, 5 do pcall(function() chat.SayMessageRequest:FireServer("OLLIE WAS HERE", "All") end) task.wait(0.1) end end
-            end
-        elseif fName == "Delete Map (Local)" then
-            if isOn then for _, v in pairs(workspace:GetChildren()) do if v ~= char and v:IsA("Model") then v:Destroy() end end end
-        elseif fName == "Walk on Water" then
-            if isOn and char and char:FindFirstChild("HumanoidRootPart") then
-                local p = Instance.new("Part"); p.Name = "OllieWater"; p.Size = Vector3.new(50, 1, 50); p.Transparency = 1; p.Anchored = true; p.CanCollide = true; p.Parent = workspace; p.CFrame = char.HumanoidRootPart.CFrame - Vector3.new(0, 3, 0)
-            else
-                local p = workspace:FindFirstChild("OllieWater")
-                if p then p:Destroy() end
-            end
-        elseif fName == "Moon Gravity" then workspace.Gravity = isOn and 50 or 196.2
-        elseif fName == "Zero Gravity" then workspace.Gravity = isOn and 0 or 196.2
-        elseif fName == "Dance" then
-            if isOn and char then local hum = char:FindFirstChildOfClass("Humanoid"); local a = Instance.new("Animation"); a.AnimationId = "rbxassetid://507771019"; hum:LoadAnimation(a):Play() end
-        elseif fName == "Sit" then if char then char.Humanoid.Sit = isOn end
-        elseif fName == "Ragdoll" then if char then char.Humanoid:ChangeState(isOn and Enum.HumanoidStateType.Physics or Enum.HumanoidStateType.GettingUp) end
-        elseif fName == "No Fall Dmg" then Toggles.NoFall = isOn
-        elseif fName == "Anti-Fling" then Toggles.AntiFling = isOn
-        elseif fName == "Kill All (Local)" then
-            if isOn then for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Humanoid") then p.Character.Humanoid.Health = 0 end end end
-        elseif fName == "Freeze All" then
-            for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then p.Character.HumanoidRootPart.Anchored = isOn end end
-        elseif fName == "Remove Fog" then Lighting.FogEnd = isOn and 100000 or 1000; Lighting.FogStart = isOn and 100000 or 0
-        elseif fName == "Remove Sky" then
-            if isOn then for _, v in pairs(Lighting:GetChildren()) do if v:IsA("Sky") then v:Destroy() end end end
-        elseif fName == "Item ESP" then Toggles.ItemESP = isOn
-        elseif fName == "X-Ray" then Toggles.XRay = isOn
-        elseif fName == "Auto Buy" then Toggles.AutoBuy = isOn
-        elseif fName == "One Hit Kill" then Toggles.OneHit = isOn
-        elseif fName == "Inf Ammo" then
-            if isOn and char then for _, v in pairs(char:GetDescendants()) do if v:IsA("IntValue") and string.find(string.lower(v.Name), "ammo") then v.Value = 9999 end end end
-        elseif fName == "Unlock VIP Tools" then
-            if isOn then for _, v in pairs(game:GetDescendants()) do if v:IsA("Tool") then pcall(function() local c = v:Clone(); c.Parent = LocalPlayer.Backpack end) end end end
-        elseif fName == "Spam Emotes" then Toggles.SpamEmotes = isOn
-        elseif fName == "Fling All" then
-            if isOn then
-                for _, p in pairs(Players:GetPlayers()) do
-                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                        local bv = Instance.new("BodyAngularVelocity"); bv.AngularVelocity = Vector3.new(9999, 9999, 9999); bv.MaxTorque = Vector3.new(math.huge, math.huge, math.huge); bv.Parent = p.Character.HumanoidRootPart
-                        p.Character.HumanoidRootPart.Velocity = Vector3.new(math.huge, math.huge, math.huge)
-                    end
-                end
-            end
-        elseif fName == "Bring All" then
-            if isOn and char and char:FindFirstChild("HumanoidRootPart") then
-                for _, p in pairs(Players:GetPlayers()) do
-                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                        p.Character.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-                    end
-                end
+-- ==================== অ্যাকশন ফাংশন (ক্লিক করলেই কাজ করবে, কোনো অটো ট্যাপ নেই) ====================
+createActionBtn("TP to Mouse (Click)", function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local m = LocalPlayer:GetMouse()
+        if m.Hit then char.HumanoidRootPart.CFrame = CFrame.new(m.Hit.Position + Vector3.new(0, 3, 0)) end
+    end
+end)
+
+createActionBtn("Goto Closest", function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local c, d = nil, 9999
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                local dist = (char.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
+                if dist < d then c = p; d = dist end
             end
         end
+        if c then char.HumanoidRootPart.CFrame = c.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3) end
+    end
+end)
+
+createActionBtn("Bring All", function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                p.Character.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+            end
+        end
+    end
+end)
+
+createActionBtn("Fling All", function()
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local bv = Instance.new("BodyAngularVelocity"); bv.AngularVelocity = Vector3.new(9999, 9999, 9999); bv.MaxTorque = Vector3.new(math.huge, math.huge, math.huge); bv.Parent = p.Character.HumanoidRootPart
+            p.Character.HumanoidRootPart.Velocity = Vector3.new(math.huge, math.huge, math.huge)
+        end
+    end
+end)
+
+createActionBtn("Server Hop", function()
+    local Http, TS = game:GetService("HttpService"), game:GetService("TeleportService")
+    pcall(function()
+        local s = Http:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
+        for _, v in pairs(s.data) do if v.playing < v.maxPlayers and v.id ~= game.JobId then TS:TeleportToPlaceInstance(game.PlaceId, v.id, LocalPlayer) break end end
     end)
-end
+end)
+
+createActionBtn("Rejoin Server", function()
+    game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
+end)
+
+createActionBtn("FPS Boost", function()
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end
+        if v:IsA("Decal") or v:IsA("Texture") then v.Transparency = 1 end
+    end
+end)
+
+createActionBtn("Headless", function()
+    local char = LocalPlayer.Character
+    if char then char:FindFirstChildOfClass("Humanoid").HeadScale.Value = 0.01 end
+end)
+
+createActionBtn("Korblox", function()
+    local char = LocalPlayer.Character
+    if char then char:FindFirstChildOfClass("Humanoid").BodyTypeScale.Value = 0.01 end
+end)
+
+createActionBtn("Spin Player", function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local bv = Instance.new("BodyAngularVelocity"); bv.AngularVelocity = Vector3.new(0, 20, 0); bv.MaxTorque = Vector3.new(0, math.huge, 0); bv.Parent = char.HumanoidRootPart
+        task.delay(3, function() bv:Destroy() end)
+    end
+end)
+
+createActionBtn("Reset Character", function()
+    if LocalPlayer.Character then LocalPlayer.Character:BreakJoints() end
+end)
+
+createActionBtn("Remove Fog & Sky", function()
+    Lighting.FogEnd = 100000; Lighting.FogStart = 100000
+    for _, v in pairs(Lighting:GetChildren()) do if v:IsA("Sky") then v:Destroy() end end
+end)
+
+createActionBtn("Walk on Water", function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local p = Instance.new("Part"); p.Name = "OllieWater"; p.Size = Vector3.new(50, 1, 50); p.Transparency = 1; p.Anchored = true; p.CanCollide = true; p.Parent = workspace; p.CFrame = char.HumanoidRootPart.CFrame - Vector3.new(0, 3, 0)
+    end
+end)
+
+createActionBtn("Freeze All", function()
+    for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then p.Character.HumanoidRootPart.Anchored = true end end
+end)
+
+createActionBtn("Unlock VIP Tools", function()
+    for _, v in pairs(game:GetDescendants()) do if v:IsA("Tool") then pcall(function() local c = v:Clone(); c.Parent = LocalPlayer.Backpack end) end end
+end)
 
 -- ==================== কোর লজিক ====================
 local bodyVel, gravityForce, speedBodyVel
 local jumpRequested = false
+
 UserInputService.JumpRequest:Connect(function()
     jumpRequested = true
     task.delay(0.1, function() jumpRequested = false end)
@@ -334,12 +317,26 @@ RunService.RenderStepped:Connect(function()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hum or not hrp then return end
 
+    -- Fullbright
+    if Toggles.Fullbright then
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 12
+    else
+        Lighting.Brightness = 1
+    end
+
+    -- God Mode & Anti Void
     if Toggles.GodMode and hum.Health < hum.MaxHealth then pcall(function() hum.Health = hum.MaxHealth end) end
     if Toggles.AntiVoid and hrp.Position.Y < -50 then pcall(function() hrp.CFrame = CFrame.new(0, 50, 0) end) end
+
+    -- Giant & Invisible
     if Toggles.Giant then pcall(function() char:ScaleTo(Values.GiantSize) end) else pcall(function() char:ScaleTo(1) end) end
     if Toggles.Invisible then for _, v in pairs(char:GetDescendants()) do if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then v.Transparency = 1 end end end
+
+    -- WallHack
     if Toggles.WallHack then for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end end end
 
+    -- Speed
     if Toggles.Speed and not Toggles.Fly then
         hum.WalkSpeed = 16 
         if Values.Speed > 100 then
@@ -368,53 +365,28 @@ RunService.RenderStepped:Connect(function()
         if Toggles.FlyWallHack then for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end end end
         
         local direction = Vector3.new()
-        
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction = direction + Camera.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - Camera.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction = direction - Camera.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction = direction + Camera.CFrame.RightVector end
-        
         if hum.MoveDirection.Magnitude > 0 then
             local camLook = Camera.CFrame.LookVector
             local camRight = Camera.CFrame.RightVector
-            
-            if Toggles.FlyLock then
-                camLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
-                camRight = Vector3.new(camRight.X, 0, camRight.Z).Unit
-            end
-            
             local flatLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
             local flatRight = Vector3.new(camRight.X, 0, camRight.Z).Unit
-            
             local forwardAmount = hum.MoveDirection:Dot(flatLook)
             local rightAmount = hum.MoveDirection:Dot(flatRight)
             
-            direction = direction + (camLook * forwardAmount) + (camRight * rightAmount)
+            if Toggles.FlyLock then
+                direction = (flatLook * forwardAmount) + (flatRight * rightAmount)
+            else
+                direction = (camLook * forwardAmount) + (camRight * rightAmount)
+            end
         end
         
-        if not Toggles.FlyLock then
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) or jumpRequested then direction = direction + Vector3.new(0, 1, 0) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then direction = direction - Vector3.new(0, 1, 0) end
-        else
-            direction = Vector3.new(direction.X, 0, direction.Z)
-        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) or jumpRequested then direction = direction + Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then direction = direction - Vector3.new(0, 1, 0) end
         
         if direction.Magnitude > 0 then bodyVel.Velocity = direction.Unit * Values.FlySpeed else bodyVel.Velocity = Vector3.new(0, 0, 0) end
     else
         if bodyVel then bodyVel:Destroy() bodyVel = nil end
         if gravityForce then gravityForce:Destroy() gravityForce = nil end
-    end
-end)
-
--- Click TP
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if Toggles.ClickTP and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            local m = LocalPlayer:GetMouse()
-            if m.Hit then char.HumanoidRootPart.CFrame = CFrame.new(m.Hit.Position + Vector3.new(0, 3, 0)) end
-        end
     end
 end)
 
@@ -494,4 +466,4 @@ task.spawn(function()
     end
 end)
 
-print("Absolute Master V19 Loaded Successfully!")
+print("Absolute Master V20 Loaded Successfully!")
