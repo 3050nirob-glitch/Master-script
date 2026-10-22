@@ -5,8 +5,9 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
+local TeleportService = game:GetService("TeleportService")
 
--- ==================== অ্যান্টি-চিট বাইপাস ====================
+-- ==================== অ্যান্টি-কিক ও বাইপাস হুক ====================
 pcall(function()
     local mt = getrawmetatable(game)
     local oldNamecall = mt.__namecall
@@ -14,6 +15,12 @@ pcall(function()
     mt.__namecall = newcclosure(function(self, ...)
         local method = getnamecallmethod()
         if method == "Kick" then return end
+        if method == "Teleport" or method == "TeleportAsync" then
+            local args = {...}
+            if self == TeleportService and (not args[1] or args[1] == 0 or args[1] == -1) then
+                return -- গেম থেকে বের করে দেওয়া ব্লক
+            end
+        end
         if method == "UserOwnsGamePassAsync" or method == "PlayerOwnsAsset" then return true end
         return oldNamecall(self, ...)
     end)
@@ -31,9 +38,9 @@ local Values = {
     Speed = 100, FlySpeed = 150, GiantSize = 10
 }
 
--- ==================== UI (Design & Layout) ====================
+-- ==================== UI ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MasterUI_V16"
+ScreenGui.Name = "MasterUI_V17"
 pcall(function() ScreenGui.Parent = game.CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
@@ -162,7 +169,7 @@ local function createActionBtn(name, callback)
     end)
 end
 
--- ==================== গুরুত্বপূর্ণ ফাংশন (উপরে) ====================
+-- ==================== গুরুত্বপূর্ণ ফাংশন ====================
 createToggle("Speed Hack", "Speed")
 createBox("Speed (Max 2000)", "Speed")
 createToggle("Fly (Camera Direction)", "Fly")
@@ -324,7 +331,7 @@ RunService.RenderStepped:Connect(function()
         if speedBodyVel then speedBodyVel:Destroy() speedBodyVel = nil end
     end
 
-    -- Fly Logic (Camera Direction Fix)
+    -- Fly Logic (Corrected Camera Direction via Dot Product)
     if Toggles.Fly then
         hum.WalkSpeed = 16
         if not bodyVel or bodyVel.Parent ~= hrp then
@@ -338,8 +345,17 @@ RunService.RenderStepped:Connect(function()
         if hum.MoveDirection.Magnitude > 0 then
             local camLook = Camera.CFrame.LookVector
             local camRight = Camera.CFrame.RightVector
-            direction = (camLook * hum.MoveDirection.Z) + (camRight * hum.MoveDirection.X)
+            -- ফ্ল্যাট প্রোজেকশন ব্যবহার করে সঠিক দিক নির্ণয়
+            local flatLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
+            local flatRight = Vector3.new(camRight.X, 0, camRight.Z).Unit
+            
+            local forwardAmount = hum.MoveDirection:Dot(flatLook)
+            local rightAmount = hum.MoveDirection:Dot(flatRight)
+            
+            -- camLook সরাসরি ব্যবহার করায় ক্যামেরা উপরে থাকলে উপরে, নিচে থাকলে নিচে যাবে
+            direction = (camLook * forwardAmount) + (camRight * rightAmount)
         end
+        
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) or jumpRequested then direction = direction + Vector3.new(0, 1, 0) end
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then direction = direction - Vector3.new(0, 1, 0) end
         
@@ -438,4 +454,4 @@ task.spawn(function()
     end
 end)
 
-print("Absolute Master V16 Loaded!")
+print("Absolute Master V17 Loaded Successfully!")
