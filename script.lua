@@ -29,7 +29,7 @@ local Values = {
     Speed = 60, FlySpeed = 50, SlapRange = 100, GiantSize = 3
 }
 
--- ==================== ১. UI (Perfect Scroll Fix) ====================
+-- ==================== ১. UI (Infinite Scroll Fix) ====================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "MasterFixUI"
 pcall(function() ScreenGui.Parent = game.CoreGui end)
@@ -83,9 +83,13 @@ UIListLayout.Parent = MainFrame
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 5)
 
--- অটোমেটিক স্ক্রল সাইজ (মোবাইলের জন্য ১০০% ফিক্স)
-UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    MainFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 30)
+-- ইনফিনিট স্ক্রল ফিক্স (কন্টিনিউয়াস আপডেট)
+task.spawn(function()
+    while task.wait(0.5) do
+        if MainFrame and UIListLayout then
+            MainFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 100)
+        end
+    end
 end)
 
 Icon.MouseButton1Click:Connect(function()
@@ -249,7 +253,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ==================== ৪. মোবাইল ফ্লাই ফিক্স (Smooth Fly) ====================
+-- ==================== ৪. ফ্লাই লজিক (জয়স্টিক ফিক্সড) ====================
 local bodyVel, bodyGyro
 UserInputService.JumpRequest:Connect(function()
     if Toggles.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
@@ -275,13 +279,8 @@ RunService.RenderStepped:Connect(function()
             bodyGyro.Parent = hrp
         end
         
-        local direction = Vector3.new()
-        -- মোবাইল জয়স্টিক এবং ক্যামেরা ভিত্তিক মুভমেন্ট
-        if hum.MoveDirection.Magnitude > 0 then
-            local camLook = Camera.CFrame.LookVector
-            local camRight = Camera.CFrame.RightVector
-            direction = (camLook * hum.MoveDirection.Z) + (camRight * hum.MoveDirection.X)
-        end
+        -- জয়স্টিকের মুভমেন্ট সরাসরি ইউজ করা হচ্ছে (ফ্লিপ বাগ ফিক্সড)
+        local direction = hum.MoveDirection
         
         -- উপরে ওঠার জন্য জাম্প বাটন
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then 
@@ -389,4 +388,4 @@ task.spawn(function()
     end
 end)
 
-print("Absolute Master Fix Loaded! Smooth Fly & Scroll Enabled.")
+print("Absolute Master Fix V10 Loaded Successfully!")
