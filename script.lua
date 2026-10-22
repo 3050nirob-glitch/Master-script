@@ -18,7 +18,7 @@ pcall(function()
         if method == "Teleport" or method == "TeleportAsync" then
             local args = {...}
             if self == TeleportService and (not args[1] or args[1] == 0 or args[1] == -1) then
-                return -- গেম থেকে বের করে দেওয়া ব্লক
+                return
             end
         end
         if method == "UserOwnsGamePassAsync" or method == "PlayerOwnsAsset" then return true end
@@ -28,7 +28,7 @@ pcall(function()
 end)
 
 local Toggles = {
-    Speed = true, Fly = false, FlyWallHack = false, WallHack = false,
+    Speed = true, Fly = false, FlyLock = false, FlyWallHack = false, WallHack = false,
     ESP = false, Antenna = true, Aimbot = false, HeadshotOnly = false,
     AutoKill = false, AutoFarm = false, Giant = false, Invisible = false, 
     ForceStay = false, AntiVoid = true, GodMode = true, ClickTP = false
@@ -40,7 +40,7 @@ local Values = {
 
 -- ==================== UI ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MasterUI_V17"
+ScreenGui.Name = "MasterUI_V18"
 pcall(function() ScreenGui.Parent = game.CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
@@ -172,7 +172,8 @@ end
 -- ==================== গুরুত্বপূর্ণ ফাংশন ====================
 createToggle("Speed Hack", "Speed")
 createBox("Speed (Max 2000)", "Speed")
-createToggle("Fly (Camera Direction)", "Fly")
+createToggle("Fly", "Fly")
+createToggle("Lock Vertical (Fly)", "FlyLock")
 createToggle("Fly + WallHack", "FlyWallHack")
 createBox("Fly Speed (Max 2000)", "FlySpeed")
 createToggle("Aimbot", "Aimbot")
@@ -331,7 +332,7 @@ RunService.RenderStepped:Connect(function()
         if speedBodyVel then speedBodyVel:Destroy() speedBodyVel = nil end
     end
 
-    -- Fly Logic (Corrected Camera Direction via Dot Product)
+    -- Fly Logic (From First Script)
     if Toggles.Fly then
         hum.WalkSpeed = 16
         if not bodyVel or bodyVel.Parent ~= hrp then
@@ -342,22 +343,36 @@ RunService.RenderStepped:Connect(function()
         if Toggles.FlyWallHack then for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end end end
         
         local direction = Vector3.new()
+        
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction = direction + Camera.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - Camera.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction = direction - Camera.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction = direction + Camera.CFrame.RightVector end
+        
         if hum.MoveDirection.Magnitude > 0 then
             local camLook = Camera.CFrame.LookVector
             local camRight = Camera.CFrame.RightVector
-            -- ফ্ল্যাট প্রোজেকশন ব্যবহার করে সঠিক দিক নির্ণয়
+            
+            if Toggles.FlyLock then
+                camLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
+                camRight = Vector3.new(camRight.X, 0, camRight.Z).Unit
+            end
+            
             local flatLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
             local flatRight = Vector3.new(camRight.X, 0, camRight.Z).Unit
             
             local forwardAmount = hum.MoveDirection:Dot(flatLook)
             local rightAmount = hum.MoveDirection:Dot(flatRight)
             
-            -- camLook সরাসরি ব্যবহার করায় ক্যামেরা উপরে থাকলে উপরে, নিচে থাকলে নিচে যাবে
-            direction = (camLook * forwardAmount) + (camRight * rightAmount)
+            direction = direction + (camLook * forwardAmount) + (camRight * rightAmount)
         end
         
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) or jumpRequested then direction = direction + Vector3.new(0, 1, 0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then direction = direction - Vector3.new(0, 1, 0) end
+        if not Toggles.FlyLock then
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) or jumpRequested then direction = direction + Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then direction = direction - Vector3.new(0, 1, 0) end
+        else
+            direction = Vector3.new(direction.X, 0, direction.Z)
+        end
         
         if direction.Magnitude > 0 then bodyVel.Velocity = direction.Unit * Values.FlySpeed else bodyVel.Velocity = Vector3.new(0, 0, 0) end
     else
@@ -454,4 +469,4 @@ task.spawn(function()
     end
 end)
 
-print("Absolute Master V17 Loaded Successfully!")
+print("Absolute Master V18 Loaded Successfully!")
