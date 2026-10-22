@@ -5,7 +5,7 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- ==================== অ্যান্টি-চিট হুক (কিক ব্লক) ====================
+-- ==================== অ্যান্টি-চিট হুক ====================
 pcall(function()
     local mt = getrawmetatable(game)
     local oldNamecall = mt.__namecall
@@ -19,24 +19,22 @@ pcall(function()
 end)
 
 local Toggles = {
-    Speed = true, Fly = false, SlapAura = true, Giant = false, 
+    Speed = true, Fly = false, SlapAura = false, Giant = false, 
     Hitbox = false, ESP = false, Antenna = true, Noclip = false, 
     InfJump = false, AntiVoid = true, Fullbright = false, ClickTP = false,
-    GodMode = true, AutoParry = false, RapidFire = false, NoReload = false,
-    Invisible = false, MoonGravity = false, ZeroGravity = false, AntiFling = true
+    GodMode = true, Invisible = false, ZeroGravity = false
 }
 
 local Values = {
     Speed = 60, FlySpeed = 50, SlapRange = 100, GiantSize = 3
 }
 
--- ==================== UI ====================
+-- ==================== ১. UI (Perfect Scroll Fix) ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "UltimateV9_UI"
+ScreenGui.Name = "MasterFixUI"
 pcall(function() ScreenGui.Parent = game.CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
--- ড্র্যাগেবল আইকন
 local Icon = Instance.new("TextButton")
 Icon.Parent = ScreenGui
 Icon.Size = UDim2.new(0, 45, 0, 45)
@@ -65,7 +63,6 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- মেইন স্ক্রলিং ফ্রেম (ফিক্সড)
 local MainFrame = Instance.new("ScrollingFrame")
 MainFrame.Parent = ScreenGui
 MainFrame.Size = UDim2.new(0, 180, 0, 400)
@@ -76,8 +73,8 @@ MainFrame.BorderSizePixel = 0
 MainFrame.Visible = false
 MainFrame.ScrollingDirection = Enum.ScrollingDirection.Y
 MainFrame.ScrollingEnabled = true
-MainFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y -- অটো স্ক্রল ফিক্স
-MainFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+MainFrame.ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
+MainFrame.CanvasSize = UDim2.new(0, 0, 0, 0) 
 MainFrame.ScrollBarThickness = 6
 MainFrame.ScrollBarImageColor3 = Color3.fromRGB(200, 0, 0)
 
@@ -86,11 +83,15 @@ UIListLayout.Parent = MainFrame
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 5)
 
+-- অটোমেটিক স্ক্রল সাইজ (মোবাইলের জন্য ১০০% ফিক্স)
+UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    MainFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 30)
+end)
+
 Icon.MouseButton1Click:Connect(function()
     if not dragging then MainFrame.Visible = not MainFrame.Visible end
 end)
 
--- হেল্পার ফাংশন (বাটন ও টেক্সট বক্স)
 local function createToggle(name, toggleName)
     local btn = Instance.new("TextButton")
     btn.Parent = MainFrame
@@ -140,15 +141,15 @@ local function createButton(name, callback)
     btn.MouseButton1Click:Connect(callback)
 end
 
--- ==================== ১. কোর ফাংশনসমূহ (৫০+) ====================
+-- ==================== ২. ফাংশন লিস্ট ====================
 createToggle("Speed Hack", "Speed")
-createBox("Set Walk Speed", "Speed")
+createBox("Set Speed", "Speed")
 
-createToggle("Fly", "Fly")
+createToggle("Fly (Mobile)", "Fly")
 createBox("Set Fly Speed", "FlySpeed")
 
-createToggle("Slap Aura (Auto)", "SlapAura")
-createBox("Set Slap Range (Studs)", "SlapRange")
+createToggle("Slap Aura", "SlapAura")
+createBox("Set Slap Range", "SlapRange")
 
 createToggle("Ultra Giant", "Giant")
 createBox("Set Giant Size", "GiantSize")
@@ -162,15 +163,9 @@ createToggle("Anti-Void (No Death)", "AntiVoid")
 createToggle("Fullbright", "Fullbright")
 createToggle("Click TP", "ClickTP")
 createToggle("God Mode (Local)", "GodMode")
-createToggle("Auto Parry", "AutoParry")
-createToggle("Rapid Fire", "RapidFire")
-createToggle("No Reload", "NoReload")
 createToggle("Invisible", "Invisible")
-createToggle("Moon Gravity", "MoonGravity")
 createToggle("Zero Gravity", "ZeroGravity")
-createToggle("Anti-Fling", "AntiFling")
 
--- অ্যাকশন বাটনসমূহ
 createButton("Bring All Players", function()
     local myChar = LocalPlayer.Character
     if myChar and myChar:FindFirstChild("HumanoidRootPart") then
@@ -196,59 +191,10 @@ createButton("Fling All Players", function()
     end
 end)
 
-createButton("Kill All (Spam)", function()
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            local hum = p.Character:FindFirstChildOfClass("Humanoid")
-            if hum then pcall(function() hum.Health = 0 end) end
-        end
-    end
-end)
-
-createButton("Freeze All", function()
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            pcall(function()
-                p.Character.HumanoidRootPart.Anchored = true
-            end)
-        end
-    end
-end)
-
-createButton("Server Hop", function()
-    local Http = game:GetService("HttpService")
-    local TeleportService = game:GetService("TeleportService")
-    local PlaceId = game.PlaceId
-    pcall(function()
-        local servers = Http:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
-        for _, v in pairs(servers.data) do
-            if v.playing < v.maxPlayers and v.id ~= game.JobId then
-                TeleportService:TeleportToPlaceInstance(PlaceId, v.id, LocalPlayer)
-                break
-            end
-        end
-    end)
-end)
-
-createButton("Rejoin Server", function()
-    game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
-end)
-
 createButton("FPS Boost (Low GFX)", function()
     for _, v in pairs(game:GetDescendants()) do
         if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end
         if v:IsA("Decal") or v:IsA("Texture") then v.Transparency = 1 end
-    end
-end)
-
-createButton("Spin Character", function()
-    local char = LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        local bv = Instance.new("BodyAngularVelocity")
-        bv.AngularVelocity = Vector3.new(0, 20, 0)
-        bv.MaxTorque = Vector3.new(0, math.huge, 0)
-        bv.Parent = char.HumanoidRootPart
-        task.delay(3, function() bv:Destroy() end)
     end
 end)
 
@@ -270,60 +216,7 @@ createButton("Reset Character", function()
     if LocalPlayer.Character then LocalPlayer.Character:BreakJoints() end
 end)
 
-createButton("Spam Chat (Loop)", function()
-    local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-    if chatEvent then
-        local sayMessage = chatEvent:FindFirstChild("SayMessageRequest")
-        if sayMessage then
-            for i=1, 10 do
-                pcall(function() sayMessage:FireServer("OLLIE WAS HERE!", "All") end)
-                task.wait(0.1)
-            end
-        end
-    end
-end)
-
-createButton("Delete Map (Local)", function()
-    for _, v in pairs(workspace:GetChildren()) do
-        if v ~= LocalPlayer.Character and v:IsA("Model") then
-            v:Destroy()
-        end
-    end
-end)
-
-createButton("Walk On Water", function()
-    local char = LocalPlayer.Character
-    if char then
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local waterPlatform = Instance.new("Part")
-            waterPlatform.Size = Vector3.new(50, 1, 50)
-            waterPlatform.Transparency = 1
-            waterPlatform.Anchored = true
-            waterPlatform.CanCollide = true
-            waterPlatform.Parent = workspace
-            waterPlatform.CFrame = hrp.CFrame - Vector3.new(0, 3, 0)
-        end
-    end
-end)
-
-createButton("Goto Closest Player", function()
-    local myChar = LocalPlayer.Character
-    if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-        local closest, dist = nil, 9999
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                local d = (myChar.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
-                if d < dist then closest = p; dist = d end
-            end
-        end
-        if closest then
-            myChar.HumanoidRootPart.CFrame = closest.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-        end
-    end
-end)
-
--- ==================== ২. কোর লজিক ====================
+-- ==================== ৩. কোর লজিক ====================
 RunService.RenderStepped:Connect(function()
     local char = LocalPlayer.Character
     if not char then return end
@@ -331,30 +224,24 @@ RunService.RenderStepped:Connect(function()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hum or not hrp then return end
 
-    -- Speed
     if Toggles.Speed and not Toggles.Fly and hum.WalkSpeed ~= Values.Speed then
         pcall(function() hum.WalkSpeed = Values.Speed end)
     end
 
-    -- God Mode (Local)
     if Toggles.GodMode and hum.Health < hum.MaxHealth then
         pcall(function() hum.Health = hum.MaxHealth end)
     end
 
-    -- Noclip
     if Toggles.Noclip then
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") and part.CanCollide then pcall(function() part.CanCollide = false end) end
         end
     end
 
-    -- Gravity
-    if Toggles.MoonGravity then workspace.Gravity = 50 elseif Toggles.ZeroGravity then workspace.Gravity = 0 else workspace.Gravity = 196.2 end
+    if Toggles.ZeroGravity then workspace.Gravity = 0 else workspace.Gravity = 196.2 end
 
-    -- Giant
     if Toggles.Giant then pcall(function() char:ScaleTo(Values.GiantSize) end) else pcall(function() char:ScaleTo(1) end) end
     
-    -- Invisible
     if Toggles.Invisible then
         for _, v in pairs(char:GetDescendants()) do
             if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then pcall(function() v.Transparency = 1 end) end
@@ -362,8 +249,8 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Fly Logic
-local bodyVel, gravityForce
+-- ==================== ৪. মোবাইল ফ্লাই ফিক্স (Smooth Fly) ====================
+local bodyVel, bodyGyro
 UserInputService.JumpRequest:Connect(function()
     if Toggles.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
         pcall(function() LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end)
@@ -377,30 +264,46 @@ RunService.RenderStepped:Connect(function()
     local hum = char:FindFirstChildOfClass("Humanoid")
     
     if Toggles.Fly and hrp and hum then
-        hum.WalkSpeed = 16
+        hum.PlatformStand = true
         if not bodyVel then
             bodyVel = Instance.new("BodyVelocity")
             bodyVel.MaxForce = Vector3.new(1e5, 1e5, 1e5)
             bodyVel.Parent = hrp
-            gravityForce = Instance.new("BodyForce")
-            gravityForce.Force = Vector3.new(0, workspace.Gravity * hrp.AssemblyMass, 0)
-            gravityForce.Parent = hrp
+            bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+            bodyGyro.P = 1000
+            bodyGyro.Parent = hrp
         end
         
         local direction = Vector3.new()
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction = direction + Camera.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - Camera.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction = direction - Camera.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction = direction + Camera.CFrame.RightVector end
+        -- মোবাইল জয়স্টিক এবং ক্যামেরা ভিত্তিক মুভমেন্ট
+        if hum.MoveDirection.Magnitude > 0 then
+            local camLook = Camera.CFrame.LookVector
+            local camRight = Camera.CFrame.RightVector
+            direction = (camLook * hum.MoveDirection.Z) + (camRight * hum.MoveDirection.X)
+        end
         
-        if direction.Magnitude > 0 then bodyVel.Velocity = direction.Unit * Values.FlySpeed else bodyVel.Velocity = Vector3.new(0, 0, 0) end
+        -- উপরে ওঠার জন্য জাম্প বাটন
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then 
+            direction = direction + Vector3.new(0, 1, 0) 
+        end
+        
+        if direction.Magnitude > 0 then
+            bodyVel.Velocity = direction.Unit * Values.FlySpeed
+            bodyGyro.CFrame = Camera.CFrame
+        else
+            bodyVel.Velocity = Vector3.new(0, 0, 0)
+        end
     else
         if bodyVel then bodyVel:Destroy() bodyVel = nil end
-        if gravityForce then gravityForce:Destroy() gravityForce = nil end
+        if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.PlatformStand = false end
     end
 end)
 
--- Slap Aura & Hitbox Loop
+-- ==================== ৫. Aura, ESP & Antenna ====================
+local AntennaLines = {}
 task.spawn(function()
     while task.wait(0.05) do
         local char = LocalPlayer.Character
@@ -445,51 +348,21 @@ task.spawn(function()
                 end
             end
         end
-    end
-end)
-
--- Click TP
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if Toggles.ClickTP and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            local mouse = LocalPlayer:GetMouse()
-            if mouse.Hit then
-                pcall(function() char.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0)) end)
-            end
-        end
-    end
-end)
-
--- Fullbright, ESP, Antenna
-local bright = Instance.new("ColorCorrectionEffect")
-bright.Name = "OllieBright"
-bright.Brightness = 2
-bright.Contrast = 1
-bright.Enabled = false
-bright.Parent = game:GetService("Lighting")
-
-local AntennaLines = {}
-
-task.spawn(function()
-    while task.wait(0.1) do
-        bright.Enabled = Toggles.Fullbright
 
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character then
-                local char = p.Character
-                local head = char:FindFirstChild("Head")
-
+                local c = p.Character
+                local head = c:FindFirstChild("Head")
+                
                 if Toggles.ESP then
-                    if not char:FindFirstChild("OllieESP") then
+                    if not c:FindFirstChild("OllieESP") then
                         local hl = Instance.new("Highlight")
                         hl.Name = "OllieESP"
                         hl.FillColor = Color3.fromRGB(255, 0, 0)
-                        hl.Parent = char
+                        hl.Parent = c
                     end
                 else
-                    if char:FindFirstChild("OllieESP") then char.OllieESP:Destroy() end
+                    if c:FindFirstChild("OllieESP") then c.OllieESP:Destroy() end
                 end
 
                 if Toggles.Antenna and head then
@@ -500,7 +373,6 @@ task.spawn(function()
                         line.Transparency = 1
                         AntennaLines[p] = line
                     end
-
                     local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
                     if onScreen then
                         AntennaLines[p].From = Vector2.new(Camera.ViewportSize.X / 2, 0)
@@ -509,16 +381,12 @@ task.spawn(function()
                     else
                         AntennaLines[p].Visible = false
                     end
-                else
-                    if AntennaLines[p] then AntennaLines[p].Visible = false end
+                elseif AntennaLines[p] then
+                    AntennaLines[p].Visible = false
                 end
             end
         end
     end
 end)
 
-Players.PlayerRemoving:Connect(function(p)
-    if AntennaLines[p] then AntennaLines[p]:Remove(); AntennaLines[p] = nil end
-end)
-
-print("Absolute God-Tier V9 (50+ Functions & UI Fix) Loaded!")
+print("Absolute Master Fix Loaded! Smooth Fly & Scroll Enabled.")
