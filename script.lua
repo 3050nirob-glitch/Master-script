@@ -6,24 +6,7 @@ local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
 
--- ==================== অ্যান্টি-কিক হুক (টেলিপোর্ট ব্লক রিমুভড) ====================
-pcall(function()
-    local mt = getrawmetatable(game)
-    local oldNamecall = mt.__namecall
-    setreadonly(mt, false)
-    mt.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        if method == "Kick" then 
-            return 
-        end
-        if method == "UserOwnsGamePassAsync" or method == "PlayerOwnsAsset" then 
-            return true 
-        end
-        return oldNamecall(self, ...)
-    end)
-    setreadonly(mt, true)
-end)
-
+-- ==================== টগল সেট ====================
 local Toggles = {
     Speed = true, Fly = false, FlyLock = false, FlyWallHack = false, WallHack = false,
     ESP = false, Antenna = true, Aimbot = false, HeadshotOnly = false,
@@ -37,7 +20,7 @@ local Values = {
 
 -- ==================== UI ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MasterUI_V21"
+ScreenGui.Name = "MasterUI_V22"
 pcall(function() ScreenGui.Parent = game.CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
@@ -98,9 +81,11 @@ UIListLayout.Padding = UDim.new(0, 5)
 
 task.spawn(function()
     while task.wait(0.5) do
-        if MainFrame and UIListLayout then
-            MainFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 100)
-        end
+        pcall(function()
+            if MainFrame and UIListLayout then
+                MainFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 100)
+            end
+        end)
     end
 end)
 
@@ -293,7 +278,7 @@ createActionBtn("Unlock VIP Tools", function()
     for _, v in pairs(game:GetDescendants()) do if v:IsA("Tool") then pcall(function() local c = v:Clone(); c.Parent = LocalPlayer.Backpack end) end end
 end)
 
--- ==================== কোর লজিক (সেফ লোডিং) ====================
+-- ==================== কোর লজিক (হুকমুক্ত, ক্র্যাশ-ফ্রি) ====================
 local bodyVel, gravityForce, speedBodyVel
 local jumpRequested = false
 
@@ -306,89 +291,84 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 RunService.RenderStepped:Connect(function()
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hum or not hrp then return end
+    pcall(function()
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hum or not hrp then return end
 
-    -- Fullbright
-    if Toggles.Fullbright then
-        Lighting.Brightness = 2
-        Lighting.ClockTime = 12
-    else
-        Lighting.Brightness = 1
-    end
+        if Toggles.Fullbright then
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 12
+        else
+            Lighting.Brightness = 1
+        end
 
-    -- God Mode & Anti Void
-    if Toggles.GodMode and hum.Health < hum.MaxHealth then pcall(function() hum.Health = hum.MaxHealth end) end
-    if Toggles.AntiVoid and hrp.Position.Y < -50 then pcall(function() hrp.CFrame = CFrame.new(0, 50, 0) end) end
+        if Toggles.GodMode and hum.Health < hum.MaxHealth then hum.Health = hum.MaxHealth end
+        if Toggles.AntiVoid and hrp.Position.Y < -50 then hrp.CFrame = CFrame.new(0, 50, 0) end
 
-    -- Giant & Invisible
-    if Toggles.Giant then pcall(function() char:ScaleTo(Values.GiantSize) end) else pcall(function() char:ScaleTo(1) end) end
-    if Toggles.Invisible then for _, v in pairs(char:GetDescendants()) do if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then v.Transparency = 1 end end end
+        if Toggles.Giant then char:ScaleTo(Values.GiantSize) else char:ScaleTo(1) end
+        if Toggles.Invisible then for _, v in pairs(char:GetDescendants()) do if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then v.Transparency = 1 end end end
+        if Toggles.WallHack then for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end end end
 
-    -- WallHack
-    if Toggles.WallHack then for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end end end
-
-    -- Speed
-    if Toggles.Speed and not Toggles.Fly then
-        hum.WalkSpeed = 16 
-        if Values.Speed > 100 then
-            if not speedBodyVel or speedBodyVel.Parent ~= hrp then
-                if speedBodyVel then speedBodyVel:Destroy() end
-                speedBodyVel = Instance.new("BodyVelocity"); speedBodyVel.MaxForce = Vector3.new(1e5, 0, 1e5); speedBodyVel.Parent = hrp
+        if Toggles.Speed and not Toggles.Fly then
+            hum.WalkSpeed = 16 
+            if Values.Speed > 100 then
+                if not speedBodyVel or speedBodyVel.Parent ~= hrp then
+                    if speedBodyVel then speedBodyVel:Destroy() end
+                    speedBodyVel = Instance.new("BodyVelocity"); speedBodyVel.MaxForce = Vector3.new(1e5, 0, 1e5); speedBodyVel.Parent = hrp
+                end
+                local m = hum.MoveDirection
+                if m.Magnitude > 0 then speedBodyVel.Velocity = m * Values.Speed else speedBodyVel.Velocity = Vector3.new(0, 0, 0) end
+            else
+                if speedBodyVel then speedBodyVel:Destroy() speedBodyVel = nil end
+                hum.WalkSpeed = Values.Speed
             end
-            local m = hum.MoveDirection
-            if m.Magnitude > 0 then speedBodyVel.Velocity = m * Values.Speed else speedBodyVel.Velocity = Vector3.new(0, 0, 0) end
         else
             if speedBodyVel then speedBodyVel:Destroy() speedBodyVel = nil end
-            hum.WalkSpeed = Values.Speed
         end
-    else
-        if speedBodyVel then speedBodyVel:Destroy() speedBodyVel = nil end
-    end
 
-    -- Fly Logic
-    if Toggles.Fly then
-        hum.WalkSpeed = 16
-        if not bodyVel or bodyVel.Parent ~= hrp then
-            if bodyVel then bodyVel:Destroy() end
-            bodyVel = Instance.new("BodyVelocity"); bodyVel.MaxForce = Vector3.new(1e5, 1e5, 1e5); bodyVel.Parent = hrp
-            gravityForce = Instance.new("BodyForce"); gravityForce.Force = Vector3.new(0, workspace.Gravity * hrp.AssemblyMass, 0); gravityForce.Parent = hrp
-        end
-        if Toggles.FlyWallHack then for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end end end
-        
-        local direction = Vector3.new()
-        if hum.MoveDirection.Magnitude > 0 then
-            local camLook = Camera.CFrame.LookVector
-            local camRight = Camera.CFrame.RightVector
-            local flatLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
-            local flatRight = Vector3.new(camRight.X, 0, camRight.Z).Unit
-            local forwardAmount = hum.MoveDirection:Dot(flatLook)
-            local rightAmount = hum.MoveDirection:Dot(flatRight)
-            
-            if Toggles.FlyLock then
-                direction = (flatLook * forwardAmount) + (flatRight * rightAmount)
-            else
-                direction = (camLook * forwardAmount) + (camRight * rightAmount)
+        if Toggles.Fly then
+            hum.WalkSpeed = 16
+            if not bodyVel or bodyVel.Parent ~= hrp then
+                if bodyVel then bodyVel:Destroy() end
+                bodyVel = Instance.new("BodyVelocity"); bodyVel.MaxForce = Vector3.new(1e5, 1e5, 1e5); bodyVel.Parent = hrp
+                gravityForce = Instance.new("BodyForce"); gravityForce.Force = Vector3.new(0, workspace.Gravity * hrp.AssemblyMass, 0); gravityForce.Parent = hrp
             end
+            if Toggles.FlyWallHack then for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end end end
+            
+            local direction = Vector3.new()
+            if hum.MoveDirection.Magnitude > 0 then
+                local camLook = Camera.CFrame.LookVector
+                local camRight = Camera.CFrame.RightVector
+                local flatLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
+                local flatRight = Vector3.new(camRight.X, 0, camRight.Z).Unit
+                local forwardAmount = hum.MoveDirection:Dot(flatLook)
+                local rightAmount = hum.MoveDirection:Dot(flatRight)
+                
+                if Toggles.FlyLock then
+                    direction = (flatLook * forwardAmount) + (flatRight * rightAmount)
+                else
+                    direction = (camLook * forwardAmount) + (camRight * rightAmount)
+                end
+            end
+            
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) or jumpRequested then direction = direction + Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then direction = direction - Vector3.new(0, 1, 0) end
+            
+            if direction.Magnitude > 0 then bodyVel.Velocity = direction.Unit * Values.FlySpeed else bodyVel.Velocity = Vector3.new(0, 0, 0) end
+        else
+            if bodyVel then bodyVel:Destroy() bodyVel = nil end
+            if gravityForce then gravityForce:Destroy() gravityForce = nil end
         end
-        
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) or jumpRequested then direction = direction + Vector3.new(0, 1, 0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then direction = direction - Vector3.new(0, 1, 0) end
-        
-        if direction.Magnitude > 0 then bodyVel.Velocity = direction.Unit * Values.FlySpeed else bodyVel.Velocity = Vector3.new(0, 0, 0) end
-    else
-        if bodyVel then bodyVel:Destroy() bodyVel = nil end
-        if gravityForce then gravityForce:Destroy() gravityForce = nil end
-    end
+    end)
 end)
 
--- ESP & Antenna (সেফ লুপ)
+-- ESP & Antenna (মেমরি সেফ)
 local AntennaLines = {}
 task.spawn(function()
-    while task.wait(0.1) do
+    while task.wait(0.2) do
         pcall(function()
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= LocalPlayer and p.Character then
@@ -411,6 +391,11 @@ task.spawn(function()
             end
         end)
     end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if AntennaLines[p] then AntennaLines[p]:Remove(); AntennaLines[p] = nil end
+    if p.Character and p.Character:FindFirstChild("OllieESP") then p.Character.OllieESP:Destroy() end
 end)
 
 -- Aimbot & Auto Kill (সেফ লুপ)
@@ -467,4 +452,4 @@ task.spawn(function()
     end
 end)
 
-print("Absolute Master V21 Loaded Successfully!")
+print("Absolute Master V22 (Crash-Free) Loaded Successfully!")
