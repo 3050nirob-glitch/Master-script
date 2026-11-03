@@ -5,6 +5,7 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 -- ==================== টগল সেট ====================
 local Toggles = {
@@ -20,7 +21,7 @@ local Values = {
 
 -- ==================== UI ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MasterUI_V22"
+ScreenGui.Name = "MasterUI_V24"
 pcall(function() ScreenGui.Parent = game.CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
@@ -150,6 +151,43 @@ local function createActionBtn(name, callback)
         btn.BackgroundColor3 = Color3.fromRGB(50, 50, 100)
     end)
 end
+
+-- ==================== সবার উপরে: আইটেম বাইপাস ====================
+createActionBtn("Bypass Gamepass/Items (Try)", function()
+    -- ১. মেটাটেবল হুক (গেমপাসের লক খুলতে)
+    pcall(function()
+        local mt = getrawmetatable(game)
+        local oldNamecall = mt.__namecall
+        setreadonly(mt, false)
+        mt.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            if method == "UserOwnsGamePassAsync" or method == "PlayerOwnsAsset" then
+                return true
+            end
+            return oldNamecall(self, ...)
+        end)
+        setreadonly(mt, true)
+    end)
+
+    -- ২. রিমোট স্প্যাম (সার্ভারকে বোকা বানানোর চেষ্টা)
+    task.spawn(function()
+        for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+            if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
+                local name = string.lower(v.Name)
+                if string.find(name, "buy") or string.find(name, "purchase") or 
+                   string.find(name, "claim") or string.find(name, "reward") or
+                   string.find(name, "finish") or string.find(name, "instant") then
+                    pcall(function()
+                        v:FireServer("Finish All Instantly")
+                        v:FireServer("2x Money")
+                        v:FireServer(19) 
+                        v:FireServer(LocalPlayer, "Buy")
+                    end)
+                end
+            end
+        end
+    end)
+end)
 
 -- ==================== গুরুত্বপূর্ণ ফাংশন ====================
 createToggle("Speed Hack", "Speed")
@@ -452,4 +490,4 @@ task.spawn(function()
     end
 end)
 
-print("Absolute Master V22 (Crash-Free) Loaded Successfully!")
+print("Absolute Master V24 (Top Bypass) Loaded Successfully!")
