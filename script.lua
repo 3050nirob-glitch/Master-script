@@ -9,17 +9,6 @@ local MarketplaceService = game:GetService("MarketplaceService")
 
 -- ==================== টগল সেট ====================
 local Toggles = {
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Lighting = game:GetService("Lighting")
-local MarketplaceService = game:GetService("MarketplaceService")
-
--- ==================== টগল সেট ====================
-local Toggles = {
     Speed = true, Fly = false, FlyLock = false, FlyWallHack = false, WallHack = false,
     ESP = false, Antenna = true, Aimbot = false, HeadshotOnly = false,
     AutoKill = false, AutoFarm = false, Giant = false, Invisible = false, 
@@ -169,7 +158,6 @@ end
 
 -- ==================== সবার উপরে: আইটেম বাইপাস ====================
 createActionBtn("Bypass Gamepass/Items (Try)", function()
-    -- ১. মেটাটেবল হুক (গেমপাসের লক খুলতে)
     pcall(function()
         local mt = getrawmetatable(game)
         local oldNamecall = mt.__namecall
@@ -184,7 +172,6 @@ createActionBtn("Bypass Gamepass/Items (Try)", function()
         setreadonly(mt, true)
     end)
 
-    -- ২. রিমোট স্প্যাম (সার্ভারকে বোকা বানানোর চেষ্টা)
     task.spawn(function()
         for _, v in pairs(ReplicatedStorage:GetDescendants()) do
             if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
@@ -505,4 +492,4 @@ task.spawn(function()
     end
 end)
 
-print("Absolute Master V25 (Unlimited Speed) Loaded Successfully!")
+print("Absolute Master V25 Loaded Successfully!")
