@@ -9,6 +9,17 @@ local MarketplaceService = game:GetService("MarketplaceService")
 
 -- ==================== টগল সেট ====================
 local Toggles = {
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")
+local MarketplaceService = game:GetService("MarketplaceService")
+
+-- ==================== টগল সেট ====================
+local Toggles = {
     Speed = true, Fly = false, FlyLock = false, FlyWallHack = false, WallHack = false,
     ESP = false, Antenna = true, Aimbot = false, HeadshotOnly = false,
     AutoKill = false, AutoFarm = false, Giant = false, Invisible = false, 
@@ -21,7 +32,7 @@ local Values = {
 
 -- ==================== UI ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MasterUI_V24"
+ScreenGui.Name = "MasterUI_V25"
 pcall(function() ScreenGui.Parent = game.CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
@@ -128,7 +139,11 @@ local function createBox(placeholder, valueKey)
     
     box.FocusLost:Connect(function()
         local num = tonumber(box.Text)
-        if num and num >= 0 and num <= 2000 then Values[valueKey] = num else box.Text = tostring(Values[valueKey]) end
+        if num and num >= 0 then 
+            Values[valueKey] = num 
+        else 
+            box.Text = tostring(Values[valueKey]) 
+        end
     end)
 end
 
@@ -191,11 +206,11 @@ end)
 
 -- ==================== গুরুত্বপূর্ণ ফাংশন ====================
 createToggle("Speed Hack", "Speed")
-createBox("Speed (Max 2000)", "Speed")
+createBox("Speed (Unlimited)", "Speed")
 createToggle("Fly", "Fly")
 createToggle("Lock Vertical (Fly)", "FlyLock")
 createToggle("Fly + WallHack", "FlyWallHack")
-createBox("Fly Speed (Max 2000)", "FlySpeed")
+createBox("Fly Speed (Unlimited)", "FlySpeed")
 createToggle("Aimbot", "Aimbot")
 createToggle("Headshot Only", "HeadshotOnly")
 createToggle("Auto Kill (Teleport)", "AutoKill")
@@ -490,4 +505,4 @@ task.spawn(function()
     end
 end)
 
-print("Absolute Master V24 (Top Bypass) Loaded Successfully!")
+print("Absolute Master V25 (Unlimited Speed) Loaded Successfully!")
